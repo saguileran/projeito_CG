@@ -41,7 +41,7 @@ const CUBE_POSITIONS = [
 //camera para jogo 
 var gCameraAngle = 0;       // Horizontal rotation (radians)
 var gCameraRadius = 1;      // Distance from center
-var gCameraHeight = 0.5; 
+var gCameraHeight = 0.5;
 var gCameraSpeed = 0.1;     // Rotation speed (radians per keypress)
 var gVerticalSpeed = 0.2;   // Vertical movement speed
 
@@ -120,75 +120,23 @@ function main() {
 }
 
 function crieInterface() {
-    // Botões de rotação
-    // Botões de rotação (agora para a esfera)
-    document.getElementById("xButton").onclick = function() {
-        gEsferas.forEach(esfera => esfera.axis = EIXO_X_IND);
-    };
-    document.getElementById("yButton").onclick = function() {
-        gEsferas.forEach(esfera => esfera.axis = EIXO_Y_IND);
-    };
-    document.getElementById("zButton").onclick = function() {
-        gEsferas.forEach(esfera => esfera.axis = EIXO_Z_IND);
-    };
-    document.getElementById("pButton").onclick = function() {
-        gEsferas.forEach(esfera => esfera.rodando = !esfera.rodando);
-    };
 
     // Controle deslizante de velocidade
     const velocitySlider = document.getElementById("velocitySlider");
     const velocityValue = document.getElementById("velocityValue");
 
-    // Add keyboard event listeners
-    document.addEventListener('keydown', function (event) {
-        const angleStep = 0.1; // How much to rotate per keypress
+    // Track pressed keys
+    const gKeysPressed = {};
+    // Update camera continuously in render loop
+    function handleCameraMovement() {
+        updateCamera(); // Apply changes
+    }
 
-        if (event.key.toLowerCase() === 'a') {
-            gCameraAngle -= angleStep;
-            updateCamera();
-        } else if (event.key.toLowerCase() === 'd') {
-            gCameraAngle += angleStep;
-            updateCamera();
-        }
-        else if (event.key.toLowerCase() === 'p') {
-            gCubos.forEach(cubo => {
-                //ppcubo.rodando = !cubo.rodando;
-
-                // When pausing, advance by 0.5 seconds worth of rotation
-                if (cubo.rodando == false) {
-                    cubo.theta[cubo.axis] += gShader.velocity * 5;
-                }
-            });
-        }
-    });
 
     velocitySlider.addEventListener("input", function () {
         gShader.velocity = parseFloat(this.value);
         velocityValue.textContent = this.value;
     });
-
-    // Track pressed keys
-    const gKeysPressed = {};
-
-    document.addEventListener('keydown', (e) => {
-        const key = e.key.toLowerCase();
-        gKeysPressed[key] = true;
-    });
-
-    document.addEventListener('keyup', (e) => {
-        const key = e.key.toLowerCase();
-        gKeysPressed[key] = false;
-    });
-
-    // Update camera continuously in render loop
-    function handleCameraMovement() {
-        if (gKeysPressed['a']) gCameraAngle -= gCameraSpeed;    // Rotate left
-        if (gKeysPressed['d']) gCameraAngle += gCameraSpeed;    // Rotate right
-        if (gKeysPressed['w']) gCameraHeight += gVerticalSpeed; // Move up
-        if (gKeysPressed['s']) gCameraHeight -= gVerticalSpeed; // Move down
-
-        updateCamera(); // Apply changes
-    }   
 
     // Integrate into the render loop
     const originalRender = render;
@@ -213,7 +161,7 @@ function updateCamera() {
 }
 
 function crieShaders() {
- gShader.program = makeProgram(gl, gVertexShaderSrc, gFragmentShaderSrc);
+    gShader.program = makeProgram(gl, gVertexShaderSrc, gFragmentShaderSrc);
     gl.useProgram(gShader.program);
 
     // Buffer de vértices (usando a esfera)
@@ -336,20 +284,20 @@ function Esfera(radius = 1.0, sectors = 64, stacks = 32) {
     this.theta = vec3(0, 0, 0);
     this.rodando = true;      // Começa rotacionando
 
-    this.init = function() {
+    this.init = function () {
         const sectorStep = 2 * Math.PI / sectors;
         const stackStep = Math.PI / stacks;
-        
+
         for (let i = 0; i <= stacks; ++i) {
-            const stackAngle = Math.PI/2 - i * stackStep;
+            const stackAngle = Math.PI / 2 - i * stackStep;
             const xy = radius * Math.cos(stackAngle);
             const z = radius * Math.sin(stackAngle);
-            
+
             for (let j = 0; j <= sectors; ++j) {
                 const sectorAngle = j * sectorStep;
                 const x = xy * Math.cos(sectorAngle);
                 const y = xy * Math.sin(sectorAngle);
-                
+
                 this.pos.push(vec4(x, y, z, 1.0));
                 this.nor.push(vec3(x, y, z));
             }
@@ -359,14 +307,14 @@ function Esfera(radius = 1.0, sectors = 64, stacks = 32) {
         for (let i = 0; i < stacks; ++i) {
             let k1 = i * (sectors + 1);
             let k2 = k1 + sectors + 1;
-            
+
             for (let j = 0; j < sectors; ++j, ++k1, ++k2) {
                 if (i != 0) {
                     this.indices.push(k1);
                     this.indices.push(k2);
                     this.indices.push(k1 + 1);
                 }
-                
+
                 if (i != (stacks - 1)) {
                     this.indices.push(k1 + 1);
                     this.indices.push(k2);
@@ -374,7 +322,7 @@ function Esfera(radius = 1.0, sectors = 64, stacks = 32) {
                 }
             }
         }
-        
+
         this.np = this.indices.length;
     };
 }
