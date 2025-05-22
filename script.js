@@ -8,13 +8,13 @@
 // ==================================================================
 // Configurações iniciais
 // //configuraçoes para jogo
-const eye = vec3(3, 3, 3);
-const at = vec3(0, 1, 0);
-const up = vec3(0, 1, 0);
-
 // const eye = vec3(3, 3, 3);
-// const at = vec3(0, 0, 0);
+// const at = vec3(0, 1, 0);
 // const up = vec3(0, 1, 0);
+
+const eye = vec3(3, 3, 3);
+const at = vec3(0, 0, 0);
+const up = vec3(0, 1, 0);
 
 // Propriedades da fonte de luz
 const LUZ_DIR = vec4(1.0, 1.0, 1.0, 0.0);
@@ -34,22 +34,22 @@ const CUBE_POSITIONS = [
 ];
 
 // Near other global variables
-// var gCameraAngle = 0;       // Horizontal rotation (radians)
-// var gCameraRadius = 1;      // Distance from center
-// var gCameraHeight = 2;      // Initial height (y-axis)
-
-//camera para jogo 
 var gCameraAngle = 0;       // Horizontal rotation (radians)
 var gCameraRadius = 1;      // Distance from center
-var gCameraHeight = 0.5;
-var gCameraSpeed = 0.1;     // Rotation speed (radians per keypress)
-var gVerticalSpeed = 0.2;   // Vertical movement speed
+var gCameraHeight = 2;      // Initial height (y-axis)
+
+//camera para jogo 
+// var gCameraAngle = 0;       // Horizontal rotation (radians)
+// var gCameraRadius = 1;      // Distance from center
+// var gCameraHeight = 0.5;
+// var gCameraSpeed = 0.1;     // Rotation speed (radians per keypress)
+// var gVerticalSpeed = 0.2;   // Vertical movement speed
 
 var gLastTime = 0;
 var gPausedTime = 0;
 // Camera
-const FOVY = 60;
-const ASPECT = 1.5;  // Updated for wider view
+const FOVY = 80;
+const ASPECT = 1;  // Updated for wider view
 const NEAR = 0.1;
 const FAR = 50;
 
@@ -70,7 +70,6 @@ var gCanvas;
 
 // Array de cubos
 var gCubos = [];
-
 var gEsferas = [];
 
 // Configurações do shader
@@ -97,13 +96,25 @@ function main() {
     crieInterface();
 
     // Remove a criação do cubo e adiciona a esfera
-    let esfera = new Esfera();
+    // Esfera
+    let esfera = new Esfera(1, 10);
     esfera.init();
+    
     esfera.color = vec4(0.128, 0.128, 0.128, 0);  // Esfera vermelha
     esfera.position = vec3(0, 0, 0);   // Posição central
     esfera.rodando = true;             // Já começa rotacionando
     esfera.axis = EIXO_X_IND;          // Rotaciona no eixo Y por padrão
     gEsferas.push(esfera);
+
+    // Cubo
+    let cubo = new Cubo();
+    cubo.init();
+    
+    cubo.color = vec4(1, 0, 0, 0);
+    cubo.position = vec3(0, 1.5, 0);   // Posição central
+    cubo.rodando = false;            // Já começa rotacionando
+    cubo.axis = EIXO_X_IND;          // Rotaciona no eixo Y por padrão
+    gCubos.push(cubo);
 
     // Configurações WebGL
     gl.viewport(0, 0, gCanvas.width, gCanvas.height);
@@ -237,42 +248,37 @@ function render(timestamp) {
         gl.drawElements(gl.TRIANGLES, esfera.np, gl.UNSIGNED_SHORT, 0);
     });
 
+    // Renderiza cada cubo
+    gCubos.forEach(cubo => {
+        if (cubo.rodando) {
+            cubo.theta[cubo.axis] += gShader.velocity;
+        }
+
+        // Matrizes de transformação
+        let translation = translate(cubo.position[0], cubo.position[1], cubo.position[2]);
+        let rx = rotateX(cubo.theta[EIXO_X_IND]);
+        let ry = rotateY(cubo.theta[EIXO_Y_IND]);
+        let rz = rotateZ(cubo.theta[EIXO_Z_IND]);
+
+        // Combina as transformações
+        let model = mult(translation, mult(rz, mult(ry, rx)));
+
+        // Define a cor da cubo
+        gl.uniform4fv(gShader.uMatDif, cubo.color);
+
+        // Aplica as transformações
+        gl.uniformMatrix4fv(gShader.uModel, false, flatten(model));
+
+        // Desenha a cubo usando elementos (índices)
+        gl.drawElements(gl.TRIANGLES, cubo.np, gl.UNSIGNED_SHORT, 0);
+    });
+
     window.requestAnimationFrame(render);
 }
 
 // ========================================================
-// Modelo de cubo
-const CUBO_CANTOS = [
-    vec4(-0.5, -0.5, 0.5, 1.0),
-    vec4(-0.5, 0.5, 0.5, 1.0),
-    vec4(0.5, 0.5, 0.5, 1.0),
-    vec4(0.5, -0.5, 0.5, 1.0),
-    vec4(-0.5, -0.5, -0.5, 1.0),
-    vec4(-0.5, 0.5, -0.5, 1.0),
-    vec4(0.5, 0.5, -0.5, 1.0),
-    vec4(0.5, -0.5, -0.5, 1.0)
-];
-
-function Cubo() {
-    this.np = 36;
-    this.pos = [];
-    this.nor = [];
-    this.color = vec4(0.5, 1.0, 0.0, 1.0);
-    this.position = vec3(0, 0, 0);
-    this.axis = EIXO_X_IND;
-    this.theta = vec3(0, 0, 0);
-    this.rodando = false;
-
-    this.init = function () {
-        quad(this.pos, this.nor, CUBO_CANTOS, 1, 0, 3, 2);
-        quad(this.pos, this.nor, CUBO_CANTOS, 2, 3, 7, 6);
-        quad(this.pos, this.nor, CUBO_CANTOS, 3, 0, 4, 7);
-        quad(this.pos, this.nor, CUBO_CANTOS, 6, 5, 1, 2);
-        quad(this.pos, this.nor, CUBO_CANTOS, 4, 5, 6, 7);
-        quad(this.pos, this.nor, CUBO_CANTOS, 5, 4, 0, 1);
-    };
-}
-// Sphere
+// ======================== Sphere ========================
+// ========================================================
 function Esfera(radius = 1.0, sectors = 64, stacks = 32) {
     this.pos = [];
     this.nor = [];
@@ -327,8 +333,50 @@ function Esfera(radius = 1.0, sectors = 64, stacks = 32) {
     };
 }
 
+// ========================================================
+// ==================== Modelo de cubo ====================
+// ========================================================
+const CUBO_CANTOS = [
+    vec4(-0.5, -0.5, 0.5, 1.0),
+    vec4(-0.5, 0.5, 0.5, 1.0),
+    vec4(0.5, 0.5, 0.5, 1.0),
+    vec4(0.5, -0.5, 0.5, 1.0),
+    vec4(-0.5, -0.5, -0.5, 1.0),
+    vec4(-0.5, 0.5, -0.5, 1.0),
+    vec4(0.5, 0.5, -0.5, 1.0),
+    vec4(0.5, -0.5, -0.5, 1.0)
+];
 
-function quad(pos, nor, vert, a, b, c, d) {
+function Cubo() {
+    this.np  = 36;  // número de posições (vértices)
+    this.pos = [];  // vetor de posições
+    this.nor = [];  // vetor de normais
+
+    this.axis = EIXO_X_IND;  // usado na animação da rotação
+    this.theta = vec3(0, 0, 0);  // rotação em cada eixo
+    this.rodando = false;        // pausa a animação
+    this.init = function () {    // carrega os buffers
+        quad(this.pos, this.nor, CUBO_CANTOS, 1, 0, 3, 2);
+        quad(this.pos, this.nor, CUBO_CANTOS, 2, 3, 7, 6);
+        quad(this.pos, this.nor, CUBO_CANTOS, 3, 0, 4, 7);
+        quad(this.pos, this.nor, CUBO_CANTOS, 6, 5, 1, 2);
+        quad(this.pos, this.nor, CUBO_CANTOS, 4, 5, 6, 7);
+        quad(this.pos, this.nor, CUBO_CANTOS, 5, 4, 0, 1);
+    };
+};
+
+/**  ................................................................
+* cria triângulos de um quad e os carrega nos arrays
+* pos (posições) e nor (normais).
+* @param {*} pos : array de posições a ser carregado
+* @param {*} nor : array de normais a ser carregado
+* @param {*} vert : array com vértices do quad
+* @param {*} a : indices de vertices
+* @param {*} b : em ordem anti-horária
+* @param {*} c :
+* @param {*} d :
+*/
+function quad (pos, nor, vert, a, b, c, d) {
     var t1 = subtract(vert[b], vert[a]);
     var t2 = subtract(vert[c], vert[b]);
     var normal = cross(t1, t2);
@@ -347,6 +395,7 @@ function quad(pos, nor, vert, a, b, c, d) {
     pos.push(vert[d]);
     nor.push(normal);
 };
+
 
 // ========================================================
 // Shaders
