@@ -14,7 +14,7 @@
 // ==================================================================
 // Propriedades da fonte de luz
 const LUZ = {
-  pos: vec4(3.0, 3.0, 3.0, 1.0), // posição
+  pos: vec4(3.0, 10.0, 3.0, 1.0), // posição
   amb: vec4(0.2, 0.2, 0.2, 1.0), // ambiente
   dif: vec4(1.0, 1.0, 1.0, 1.0), // difusão
   esp: vec4(1.0, 1.0, 1.0, 1.0), // especular
@@ -55,17 +55,70 @@ var gCanvas;   // canvas
 var raio_world = 4.0;
 
 // objeto a ser renderizado
-var gCubo = new Cubo(vec3(1,1,1), vec3(raio_world,0,0));
+// var theta = 10; // ângulo em relação ao eixo Z
+// var phi = 10;   // ângulo em relação ao eixo X
+// var x = raio_world * Math.sin(theta) * Math.cos(phi);
+// var y = raio_world * Math.sin(theta) * Math.sin(phi);
+// var z = raio_world * Math.cos(theta);
+
+// var gCubo = new Cubo(vec3(1,1,1), vec3(raio_world, 0, 4 * Math.sin(theta) * Math.cos(phi)));
+// var gCubo2 = new Cubo(vec3(1,1,1), vec3(raio_world, 0, (4 * Math.sin(theta) * Math.cos(phi))-4));
+// var gCubo3 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+2, (4 * Math.sin(theta) * Math.cos(phi))-4));
+// var gCubo4 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+2, (4 * Math.sin(theta) * Math.cos(phi))));
+// var gCubo5 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+4, (4 * Math.sin(theta) * Math.cos(phi))-4));
+// var gCubo6 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+4, (4 * Math.sin(theta) * Math.cos(phi))));
+// var gCubo7 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+6, (4 * Math.sin(theta) * Math.cos(phi))-4));
+// var gCubo8 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+6, (4 * Math.sin(theta) * Math.cos(phi))));
+
+// var gCubos = [gCubo, gCubo2, gCubo3, gCubo4, gCubo5, gCubo6, gCubo7, gCubo8];
+var numCubos = 4;
+var gCubos = [];
+var aux;
+for (var i = 0; i < numCubos; i++) {
+  // Calcula ângulos theta e phi para distribuição uniforme
+  var theta = (Math.PI) / 2; // Equador
+  var phi = (2 * Math.PI / numCubos) * i; // Divide o círculo igualmente
+
+  
+  // Converte para coordenadas cartesianas
+  var x = (raio_world) * Math.sin(theta) * Math.cos(phi);
+  var y = raio_world * Math.sin(theta) * Math.sin(phi);
+  var z = raio_world * Math.cos(theta);
+  
+  // Cria cubo na posição calculada
+  gCubos.push(new Cubo(vec3(1, 1, 1), vec3(x, y, z+1.5)));
+}
+
+for (var i = 0; i < numCubos; i++) {
+  // Calcula ângulos theta e phi para distribuição uniforme
+  var theta = (Math.PI) / 2; // Equador
+  var phi = (2 * Math.PI / numCubos) * i; // Divide o círculo igualmente
+
+  
+  // Converte para coordenadas cartesianas
+  var x = (raio_world) * Math.sin(theta) * Math.cos(phi);
+  var y = raio_world * Math.sin(theta) * Math.sin(phi);
+  var z = raio_world * Math.cos(theta);
+  
+  // Cria cubo na posição calculada
+  gCubos.push(new Cubo(vec3(1, 1, 1), vec3(x, y, z-1.5)));
+}
+
+// var gCubo = new Cubo(vec3(1,1,1), vec3(raio_world,0,2));
 var gEsfera = new Esfera(4, vec3(raio_world,raio_world,raio_world), vec3(0,0,0));
 
-var gCubos = [gCubo,];
 var gEsferas = [gEsfera];
 
 var gObjetos = gCubos.concat(gEsferas);
 
 // calcula a matriz de transformação da camera, apenas 1 vez
-const eye = vec3(3, 3, 3);
-const at = vec3(0, 1, 0);
+// const eye = vec3(3, 3, 3);
+var gCameraHeight = 2;
+const eye = vec3(3.61, gCameraHeight, 0); 
+const at = vec3(0, 7, 0);
+
+//const eye = vec3(8, gCameraHeight, 0); 
+//const at = vec3(0, 1, 0);
 const up = vec3(0, 1, 0);
 
 
@@ -218,9 +271,37 @@ function render() {
   for (const objeto of gObjetos) {
 
       // modelo muda a cada frame da animação
-      if (objeto.rodando) objeto.theta[objeto.axis] -= 0.8;
+      if (objeto.rodando) objeto.theta[objeto.axis] -= 0.3;
 
       let model = mat4();
+      if (objeto instanceof Cubo) {
+        // A normal na superfície da esfera é a própria posição normalizada
+        var normal = normalize(vec3(objeto.trans[0], objeto.trans[1], objeto.trans[2]));
+        
+        // Cria matriz de rotação para alinhar o cubo com a normal
+        var up = vec3(0, 1, 0);
+        if (Math.abs(dot(normal, up)) > 0.99) up = vec3(1, 0, 0); // Evita problema quando normal aponta para cima
+        
+        var right = normalize(cross(up, normal));
+        var newUp = normalize(cross(normal, right));
+        
+        var orientation = mat4(
+            right[0], right[1], right[2], 0,
+            newUp[0], newUp[1], newUp[2], 0,
+            normal[0], normal[1], normal[2], 0,
+            0, 0, 0, 1
+        );
+        
+       // model = mult(model, orientation);
+    }
+
+    // Rotação própria do cubo
+    model = mult(model, rotate(-objeto.theta[EIXO_X_IND], EIXO_X));
+    model = mult(model, rotate(-objeto.theta[EIXO_Y_IND], EIXO_Y));
+    model = mult(model, rotate(-objeto.theta[EIXO_Z_IND], EIXO_Z));
+
+    // Escala e translação
+
       if (1) {
         model = mult(model, rotate(-objeto.theta[EIXO_X_IND], EIXO_X));
         model = mult(model, rotate(-objeto.theta[EIXO_Y_IND], EIXO_Y));
@@ -233,16 +314,19 @@ function render() {
         model = mult(rz, mult(ry, rx));
       }
 
+
       // escala e translação
       let mT = translate(objeto.trans[0], objeto.trans[1], objeto.trans[2]);
       let mS = scale(objeto.escala[0], objeto.escala[1], objeto.escala[2]);
       model = mult(mult(model, mT), mS);
+
 
       let modelView = mult(gCtx.view, model);
       let modelViewInv = inverse(modelView);
       let modelViewInvTrans = transpose(modelViewInv);
 
       var bufNormais = gl.createBuffer();
+
     gl.bindBuffer(gl.ARRAY_BUFFER, bufNormais);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(objeto.nor), gl.STATIC_DRAW);
 

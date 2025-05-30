@@ -12,9 +12,7 @@
 // const at = vec3(0, 1, 0);
 // const up = vec3(0, 1, 0);
 
-const eye = vec3(3, 3, 3);
-const at = vec3(0, 0, 0);
-const up = vec3(0, 1, 0);
+// const eye = vec3(3, 3, 3);
 
 // Propriedades da fonte de luz
 const LUZ_DIR = vec4(1.0, 1.0, 1.0, 0.0);
@@ -37,6 +35,10 @@ const CUBE_POSITIONS = [
 var gCameraAngle = 0;       // Horizontal rotation (radians)
 var gCameraRadius = 1;      // Distance from center
 var gCameraHeight = 2;      // Initial height (y-axis)
+
+const eye = vec3(5, gCameraHeight, 0); // X=5, Y=gCameraHeight, Z=0
+const at = vec3(0, 0, 0);
+const up = vec3(0, 1, 0);
 
 //camera para jogo 
 // var gCameraAngle = 0;       // Horizontal rotation (radians)
@@ -160,8 +162,11 @@ function crieInterface() {
 function updateCamera() {
     // Calculate circular path (x/z plane)
     gCameraHeight = Math.max(-5, Math.min(5, gCameraHeight));
-    const eyeX = gCameraRadius * Math.sin(gCameraAngle);
-    const eyeZ = gCameraRadius * Math.cos(gCameraAngle);
+    // const eyeX = gCameraRadius * Math.sin(gCameraAngle);
+    // const eyeZ = gCameraRadius * Math.cos(gCameraAngle);
+    const eyeX = gCameraRadius;
+    const eyeZ = gCameraRadius;
+
 
     // Apply height (y-axis)
     const eye = vec3(eyeX, gCameraHeight, eyeZ);
