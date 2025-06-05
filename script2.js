@@ -71,41 +71,110 @@ var raio_world = 4.0;
 // var gCubo8 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+6, (4 * Math.sin(theta) * Math.cos(phi))));
 
 // var gCubos = [gCubo, gCubo2, gCubo3, gCubo4, gCubo5, gCubo6, gCubo7, gCubo8];
-var numCubos = 4;
+var numCubos = 8;
 var gCubos = [];
 var aux;
-for (var i = 0; i < numCubos; i++) {
-  // Calcula ângulos theta e phi para distribuição uniforme
-  var theta = (Math.PI) / 2; // Equador
-  var phi = (2 * Math.PI / numCubos) * i; // Divide o círculo igualmente
+// for (var i = 0; i < numCubos; i++) {
+//   // Calcula ângulos theta e phi para distribuição uniforme
+//   var theta = (Math.PI) / 2; // Equador
+  
+//   var phi = (2 * Math.PI / numCubos) * i; // Divide o círculo igualmente
 
   
-  // Converte para coordenadas cartesianas
-  var x = (raio_world) * Math.sin(theta) * Math.cos(phi);
-  var y = raio_world * Math.sin(theta) * Math.sin(phi);
-  var z = raio_world * Math.cos(theta);
+//   // Converte para coordenadas cartesianas
+//   var x = (raio_world) * Math.sin(theta) * Math.cos(phi);
+//   var y = raio_world * Math.sin(theta) * Math.sin(phi);
+//   var z = raio_world * Math.cos(theta);
   
-  // Cria cubo na posição calculada
-  gCubos.push(new Cubo(vec3(1, 1, 1), vec3(x, y, z+1.5)));
+//   // Cria cubo na posição calculada
+//   gCubos.push(new Cubo(vec3(1+(2*raio_world), 1, 1), vec3(x-(raio_world), y, z+1.5)));
+// }
+
+// for (var i = 0; i < numCubos; i++) {
+//   // Calcula ângulos theta e phi para distribuição uniforme
+//   var theta = (Math.PI) / 2; // Equador
+//   var phi = (2 * Math.PI / numCubos) * i; // Divide o círculo igualmente
+
+  
+//   // Converte para coordenadas cartesianas
+//   var x = (raio_world) * Math.sin(theta) * Math.cos(phi);
+//   var y = raio_world * Math.sin(theta) * Math.sin(phi);
+//   var z = raio_world * Math.cos(theta);
+  
+//   // Cria cubo na posição calculada
+//   gCubos.push(new Cubo(vec3(1+(2*raio_world), 1, 1), vec3(x-(raio_world), y, z-1.5)));
+// }
+var raio_world_new= raio_world-0.6;
+for (var i = 0; i < numCubos; i++) {
+  var theta = (Math.PI / 2); // Mantém no equador
+  var phi = (2 * Math.PI / numCubos) * i;
+  
+  // Coordenadas cartesianas na superfície da esfera
+  var x = raio_world_new * Math.sin(theta) * Math.cos(phi);
+  var y = raio_world_new * Math.sin(theta) * Math.sin(phi);
+  var z = raio_world_new * Math.cos(theta);
+  
+  // Vetor de direção radial (apontando para o centro)
+  var direcao = normalize(vec3(-x, -y, -z));
+  
+  // Para metade dos cubos (ímpares), crie cubos alongados
+   if (i % 2 === 0) {
+    // Cubo alongado - escala maior na direção radial
+    var escalaAlongada = vec3(2, 2, 1); // Alonga no eixo Z (ajuste conforme necessário)
+    
+    // Posiciona o cubo para que atravesse a esfera
+    var posicaoAlongada = vec3(x, y, z-1.5);
+    
+    // Cria cubo com escala alongada
+    var cubo = new Cubo(escalaAlongada, posicaoAlongada);
+    
+    // Rotaciona o cubo para alinhar com a direção radial
+    cubo.theta[EIXO_X_IND] = Math.atan2(direcao[1], direcao[2]);
+    cubo.theta[EIXO_Y_IND] = Math.atan2(direcao[0], direcao[2]);
+    
+    gCubos.push(cubo);
+   } else {
+    // Cubo normal
+    gCubos.push(new Cubo(vec3(5, 1.2, 1), vec3(x, y, z-1.5)));
+  }
 }
 
 for (var i = 0; i < numCubos; i++) {
-  // Calcula ângulos theta e phi para distribuição uniforme
-  var theta = (Math.PI) / 2; // Equador
-  var phi = (2 * Math.PI / numCubos) * i; // Divide o círculo igualmente
-
+  var theta = (Math.PI / 2); // Mantém no equador
+  var phi = (2 * Math.PI / numCubos) * i;
   
-  // Converte para coordenadas cartesianas
-  var x = (raio_world) * Math.sin(theta) * Math.cos(phi);
-  var y = raio_world * Math.sin(theta) * Math.sin(phi);
-  var z = raio_world * Math.cos(theta);
+  // Coordenadas cartesianas na superfície da esfera
+  var x = raio_world_new * Math.sin(theta) * Math.cos(phi);
+  var y = raio_world_new * Math.sin(theta) * Math.sin(phi);
+  var z = raio_world_new * Math.cos(theta);
   
-  // Cria cubo na posição calculada
-  gCubos.push(new Cubo(vec3(1, 1, 1), vec3(x, y, z-1.5)));
+  // Vetor de direção radial (apontando para o centro)
+  var direcao = normalize(vec3(-x, -y, -z));
+  
+  // Para metade dos cubos (ímpares), crie cubos alongados
+   if (i % 2 === 0) {
+    // Cubo alongado - escala maior na direção radial
+    var escalaAlongada = vec3(2, 2, 1); // Alonga no eixo Z (ajuste conforme necessário)
+    
+    // Posiciona o cubo para que atravesse a esfera
+    var posicaoAlongada = vec3(x, y, z+1.5);
+    
+    // Cria cubo com escala alongada
+    var cubo = new Cubo(escalaAlongada, posicaoAlongada);
+    
+    // Rotaciona o cubo para alinhar com a direção radial
+    cubo.theta[EIXO_X_IND] = Math.atan2(direcao[1], direcao[2]);
+    cubo.theta[EIXO_Y_IND] = Math.atan2(direcao[0], direcao[2]);
+    
+    gCubos.push(cubo);
+   } else {
+    // Cubo normal
+    gCubos.push(new Cubo(vec3(5, 1, 1), vec3(x, y, z+1.5)));
+  }
 }
 
 // var gCubo = new Cubo(vec3(1,1,1), vec3(raio_world,0,2));
-var gEsfera = new Esfera(4, vec3(raio_world,raio_world,raio_world), vec3(0,0,0));
+var gEsfera = new Esfera(6, vec3(raio_world,raio_world,raio_world), vec3(0,0,0));
 
 var gEsferas = [gEsfera];
 
@@ -271,9 +340,9 @@ function render() {
   for (const objeto of gObjetos) {
 
       // modelo muda a cada frame da animação
-      if (objeto.rodando) objeto.theta[objeto.axis] -= 0.3;
+      if (objeto.rodando) objeto.theta[objeto.axis] -= 0.2;
 
-      let model = mat4();
+      let model = mat4();  
       if (objeto instanceof Cubo) {
         // A normal na superfície da esfera é a própria posição normalizada
         var normal = normalize(vec3(objeto.trans[0], objeto.trans[1], objeto.trans[2]));
@@ -287,8 +356,8 @@ function render() {
         
         var orientation = mat4(
             right[0], right[1], right[2], 0,
-            newUp[0], newUp[1], newUp[2], 0,
             normal[0], normal[1], normal[2], 0,
+            newUp[0], newUp[1], newUp[2], 0,
             0, 0, 0, 1
         );
         
@@ -296,9 +365,6 @@ function render() {
     }
 
     // Rotação própria do cubo
-    model = mult(model, rotate(-objeto.theta[EIXO_X_IND], EIXO_X));
-    model = mult(model, rotate(-objeto.theta[EIXO_Y_IND], EIXO_Y));
-    model = mult(model, rotate(-objeto.theta[EIXO_Z_IND], EIXO_Z));
 
     // Escala e translação
 
@@ -352,6 +418,121 @@ function render() {
     };
 
   window.requestAnimationFrame(render);
+}
+
+// function render() {
+//   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+//   var aPosition = gl.getAttribLocation(gShader.program, "aPosition");
+//   var aNormal = gl.getAttribLocation(gShader.program, "aNormal");
+
+//   for (const objeto of gObjetos) {
+//     // modelo muda a cada frame da animação
+//     if (objeto.rodando) objeto.theta[objeto.axis] -= 0.2 ;
+
+//     let model = mat4();    
+//     model = mult(model, translate(objeto.trans[0], objeto.trans[1], objeto.trans[2]));
+
+
+//     if (objeto instanceof Cubo) {
+//         // A normal na superfície da esfera é a própria posição normalizada
+//         var normal = normalize(vec3(objeto.trans[0], objeto.trans[1], objeto.trans[2]));
+        
+//         // Cria matriz de rotação para alinhar o cubo com a normal
+//         var up = vec3(0, 1, 0);
+//         if (Math.abs(dot(normal, up)) > 0.99) up = vec3(1, 0, 0); // Evita problema quando normal aponta para cima
+        
+//         var right = normalize(cross(up, normal));
+//         var newUp = normalize(cross(normal, right));
+        
+//         var orientation = mat4(
+//             right[0], right[1], right[2], 0,
+//             normal[0], normal[1], normal[2], 0,
+//             newUp[0], newUp[1], newUp[2], 0,
+//             0, 0, 0, 1
+//         );
+
+//         model = mult(model, rotate(-objeto.theta[EIXO_X_IND], EIXO_X));
+//         model = mult(model, rotate(-objeto.theta[EIXO_Y_IND], EIXO_Y));
+//         model = mult(model, rotate(-objeto.theta[EIXO_Z_IND], EIXO_Z));
+        
+//        model = mult(model, orientation);
+//     }
+
+
+//     model = mult(model, scale(objeto.escala[0], objeto.escala[1], objeto.escala[2]));
+
+//     if (objeto instanceof Esfera) {
+//       model = mult(model, rotate(objeto.theta[EIXO_X_IND], EIXO_X));
+//       model = mult(model, rotate(objeto.theta[EIXO_Y_IND], EIXO_Y));
+//       model = mult(model, rotate(objeto.theta[EIXO_Z_IND], EIXO_Z));
+//     }
+
+
+//     // Apply cube's own rotation (spinning)
+
+
+//     // Apply scaling    
+//     // Finally, translate to position on sphere surface
+//     let modelView = mult(gCtx.view, model);
+//     let modelViewInv = inverse(modelView);
+//     let modelViewInvTrans = transpose(modelViewInv);
+
+//     // Bind vertex buffer
+//     gl.bindBuffer(gl.ARRAY_BUFFER, objeto.bufVertices);
+//     gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
+//     gl.enableVertexAttribArray(aPosition);
+    
+//     // Bind normal buffer
+//     gl.bindBuffer(gl.ARRAY_BUFFER, objeto.bufNormais);
+
+//     // Bind buffers for this object
+//     var bufNormais = gl.createBuffer();
+//     gl.bindBuffer(gl.ARRAY_BUFFER, bufNormais);
+//     gl.bufferData(gl.ARRAY_BUFFER, flatten(objeto.nor), gl.STATIC_DRAW);
+
+//     var aNormal = gl.getAttribLocation(gShader.program, "aNormal");
+//     gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
+//     gl.enableVertexAttribArray(aNormal);
+
+//     var bufVertices = gl.createBuffer();
+//     gl.bindBuffer(gl.ARRAY_BUFFER, bufVertices);
+//     gl.bufferData(gl.ARRAY_BUFFER, flatten(objeto.pos), gl.STATIC_DRAW);
+
+//     var aPosition = gl.getAttribLocation(gShader.program, "aPosition");
+//     gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
+//     gl.enableVertexAttribArray(aPosition);
+
+//     gl.uniformMatrix4fv(gShader.uModel, false, flatten(model));
+//     gl.uniformMatrix4fv(gShader.uInverseTranspose, false, flatten(modelViewInvTrans));
+
+//     gl.drawArrays(gl.TRIANGLES, 0, objeto.np);
+//   }
+
+//   window.requestAnimationFrame(render);
+// }
+
+function getOrientationMatrix(normal) {
+  // We want the cube's Y axis to point along the normal
+  var targetY = normal;
+  
+  // Create an arbitrary up vector (will be adjusted if too close to normal)
+  var up = vec3(0, 1, 0);
+  if (Math.abs(dot(targetY, up)) > 0.99) {
+      up = vec3(1, 0, 0); // Use different up if normal is nearly vertical
+  }
+  
+  // Calculate right (X) and forward (Z) axes
+  var right = normalize(cross(up, targetY));
+  var forward = normalize(cross(targetY, right));
+  
+  // Create 4x4 transformation matrix (column-major)
+  return mat4(
+      right[0],    right[1],    right[2],    0,
+      targetY[0],  targetY[1],  targetY[2],  0,
+      forward[0],  forward[1],  forward[2],  0,
+      0,           0,           0,           1
+  );
 }
 
 
@@ -464,7 +645,7 @@ function insiraTriangulo(a, b, c, pos, nor) {
   // var normal = cross(t1, t2);
   // normal = vec3(normal);
 
-  var normal = getNormal(a, b, c);
+  var normal = normalize(vec3(a[0], a[1], a[2]));
 
   nor.push(normal);
   nor.push(normal);
@@ -511,6 +692,9 @@ function Cubo(escala = vec3(1,1,1), trans = vec3(0,0,0)) {
   this.escala = escala;
   this.trans = trans;
 
+  this.bufVertices = null;
+  this.bufNormais = null;
+
   this.init = function () {    // carrega os buffers
     quad(this.pos, this.nor, CUBO_CANTOS, 1, 0, 3, 2);
     quad(this.pos, this.nor, CUBO_CANTOS, 2, 3, 7, 6);
@@ -518,6 +702,14 @@ function Cubo(escala = vec3(1,1,1), trans = vec3(0,0,0)) {
     quad(this.pos, this.nor, CUBO_CANTOS, 6, 5, 1, 2);
     quad(this.pos, this.nor, CUBO_CANTOS, 4, 5, 6, 7);
     quad(this.pos, this.nor, CUBO_CANTOS, 5, 4, 0, 1);
+  
+    this.bufVertices = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufVertices);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(this.pos), gl.STATIC_DRAW);
+
+    this.bufNormais = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.bufNormais);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(this.nor), gl.STATIC_DRAW);
   };
 };
 
@@ -622,4 +814,3 @@ void main() {
     corSaida.a = 1.0;
 }
 `;
-
