@@ -16,7 +16,7 @@
 // é carregado. Modifique esses valores para ver seus efeitos.
 
 // calcula a matriz de transformação da camera, apenas 1 vez
-const eye = vec3(2, 2, 0);
+const eye = vec3(3, 3, 0);
 const at = vec3(0, 0, 0);
 const up = vec3(0, 1, 0);
 
