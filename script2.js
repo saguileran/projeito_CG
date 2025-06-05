@@ -22,6 +22,12 @@ const LUZ = {
 
 // Propriedades do material
 const MAT = {
+  amb: vec4(0.0, 0.0, 0.8, 1.0),
+  dif: vec4(1.0, 1.0, 1.0, 1.0),
+  alfa: 50.0,    // brilho ou shininess
+};
+
+const MAT_ESFERA = {
   amb: vec4(0.8, 0.8, 0.8, 1.0),
   dif: vec4(1.0, 0.0, 1.0, 1.0),
   alfa: 50.0,    // brilho ou shininess
@@ -44,6 +50,7 @@ const EIXO_X = vec3(1, 0, 0);
 const EIXO_Y = vec3(0, 1, 0);
 const EIXO_Z = vec3(0, 0, 1);
 
+const COR_ESFERA = vec4(0.1, 0, 0, 1.0); // cor da esfera
 // ==================================================================
 // variáveis globais
 // as strings com os código dos shaders também são globais, estão 
@@ -52,7 +59,9 @@ const EIXO_Z = vec3(0, 0, 1);
 var gl;        // webgl2
 var gCanvas;   // canvas
 
+// constantes de world
 var raio_world = 4.0;
+var res_esfera = 3;
 
 // objeto a ser renderizado
 // var theta = 10; // ângulo em relação ao eixo Z
@@ -61,82 +70,30 @@ var raio_world = 4.0;
 // var y = raio_world * Math.sin(theta) * Math.sin(phi);
 // var z = raio_world * Math.cos(theta);
 
-// var gCubo = new Cubo(vec3(1,1,1), vec3(raio_world, 0, 4 * Math.sin(theta) * Math.cos(phi)));
-// var gCubo2 = new Cubo(vec3(1,1,1), vec3(raio_world, 0, (4 * Math.sin(theta) * Math.cos(phi))-4));
-// var gCubo3 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+2, (4 * Math.sin(theta) * Math.cos(phi))-4));
-// var gCubo4 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+2, (4 * Math.sin(theta) * Math.cos(phi))));
-// var gCubo5 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+4, (4 * Math.sin(theta) * Math.cos(phi))-4));
-// var gCubo6 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+4, (4 * Math.sin(theta) * Math.cos(phi))));
-// var gCubo7 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+6, (4 * Math.sin(theta) * Math.cos(phi))-4));
-// var gCubo8 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+6, (4 * Math.sin(theta) * Math.cos(phi))));
-
-// var gCubos = [gCubo, gCubo2, gCubo3, gCubo4, gCubo5, gCubo6, gCubo7, gCubo8];
-var numCubos = 8;
+var numCubos = 10;
 var gCubos = [];
 var aux;
-// for (var i = 0; i < numCubos; i++) {
-//   // Calcula ângulos theta e phi para distribuição uniforme
-//   var theta = (Math.PI) / 2; // Equador
-  
-//   var phi = (2 * Math.PI / numCubos) * i; // Divide o círculo igualmente
+var cor;
 
-  
-//   // Converte para coordenadas cartesianas
-//   var x = (raio_world) * Math.sin(theta) * Math.cos(phi);
-//   var y = raio_world * Math.sin(theta) * Math.sin(phi);
-//   var z = raio_world * Math.cos(theta);
-  
-//   // Cria cubo na posição calculada
-//   gCubos.push(new Cubo(vec3(1+(2*raio_world), 1, 1), vec3(x-(raio_world), y, z+1.5)));
-// }
-
-// for (var i = 0; i < numCubos; i++) {
-//   // Calcula ângulos theta e phi para distribuição uniforme
-//   var theta = (Math.PI) / 2; // Equador
-//   var phi = (2 * Math.PI / numCubos) * i; // Divide o círculo igualmente
-
-  
-//   // Converte para coordenadas cartesianas
-//   var x = (raio_world) * Math.sin(theta) * Math.cos(phi);
-//   var y = raio_world * Math.sin(theta) * Math.sin(phi);
-//   var z = raio_world * Math.cos(theta);
-  
-//   // Cria cubo na posição calculada
-//   gCubos.push(new Cubo(vec3(1+(2*raio_world), 1, 1), vec3(x-(raio_world), y, z-1.5)));
-// }
-var raio_world_new= raio_world-0.6;
 for (var i = 0; i < numCubos; i++) {
-  var theta = (Math.PI / 2); // Mantém no equador
-  var phi = (2 * Math.PI / numCubos) * i;
+  // Calcula ângulos theta e phi para distribuição uniforme
+  var theta = (Math.PI) / 2; // Equador
+  var phi = (2 * Math.PI / numCubos) * i; // Divide o círculo igualmente
   
   // Coordenadas cartesianas na superfície da esfera
   var x = raio_world_new * Math.sin(theta) * Math.cos(phi);
   var y = raio_world_new * Math.sin(theta) * Math.sin(phi);
   var z = raio_world_new * Math.cos(theta);
   
-  // Vetor de direção radial (apontando para o centro)
-  var direcao = normalize(vec3(-x, -y, -z));
-  
-  // Para metade dos cubos (ímpares), crie cubos alongados
-   if (i % 2 === 0) {
-    // Cubo alongado - escala maior na direção radial
-    var escalaAlongada = vec3(2, 2, 1); // Alonga no eixo Z (ajuste conforme necessário)
-    
-    // Posiciona o cubo para que atravesse a esfera
-    var posicaoAlongada = vec3(x, y, z-1.5);
-    
-    // Cria cubo com escala alongada
-    var cubo = new Cubo(escalaAlongada, posicaoAlongada);
-    
-    // Rotaciona o cubo para alinhar com a direção radial
-    cubo.theta[EIXO_X_IND] = Math.atan2(direcao[1], direcao[2]);
-    cubo.theta[EIXO_Y_IND] = Math.atan2(direcao[0], direcao[2]);
-    
-    gCubos.push(cubo);
-   } else {
-    // Cubo normal
-    gCubos.push(new Cubo(vec3(5, 1.2, 1), vec3(x, y, z-1.5)));
-  }
+  // Cria cubo na posição calculada
+  gCubos.push(new Cubo(vec3(1, 1, 1), vec3(x, y, z+1.5)));
+  gCubos.push(new Cubo(vec3(1, 1, 1), vec3(x, y, z-1.5)));
+
+  cor = randomCor();
+  console.log("Cubo ", i, " cor: ", cor);
+  // gCubos[i].mat.amb = vec4(randomCor(), 1.0); // material do cubo
+  gCubos[2*i].mat.amb = vec4(cor[0], cor[1], cor[2], 1.); // material do cubo
+  gCubos[2*i+1].mat.amb = vec4(cor[0], cor[1], cor[2], 1.); // material do cubo
 }
 
 for (var i = 0; i < numCubos; i++) {
@@ -176,18 +133,18 @@ for (var i = 0; i < numCubos; i++) {
 // var gCubo = new Cubo(vec3(1,1,1), vec3(raio_world,0,2));
 var gEsfera = new Esfera(6, vec3(raio_world,raio_world,raio_world), vec3(0,0,0));
 
+// casas
 var gEsferas = [gEsfera];
-
 var gObjetos = gCubos.concat(gEsferas);
 
 // calcula a matriz de transformação da camera, apenas 1 vez
 // const eye = vec3(3, 3, 3);
 var gCameraHeight = 2;
-const eye = vec3(3.61, gCameraHeight, 0); 
-const at = vec3(0, 7, 0);
+//const eye = vec3(3.61, gCameraHeight, 0); 
+//const at = vec3(0, 7, 0);
 
-//const eye = vec3(8, gCameraHeight, 0); 
-//const at = vec3(0, 1, 0);
+const eye = vec3(8, gCameraHeight, 0); 
+const at = vec3(0, 1, 0);
 const up = vec3(0, 1, 0);
 
 
@@ -200,7 +157,10 @@ var gShader = {
 var gCtx = {
   view: mat4(),     // view matrix, inicialmente identidade
   perspective: mat4(), // projection matrix
+  velRotacion: 0.3,   // velocidade de rotação dos objetos
 };
+
+var rodando = false // animação rodando
 
 // ==================================================================
 // chama a main quando terminar de carregar a janela
@@ -242,6 +202,7 @@ function main() {
  * Cria e configura os elementos da interface e funções de callback
  */
 function crieInterface() {
+  // ------------------------ buttons ------------------------
     document.getElementById("xButton").onclick = function () {
       for (const objeto of gObjetos) {
         objeto.axis = EIXO_X_IND;
@@ -262,10 +223,24 @@ function crieInterface() {
         objeto.rodando = !objeto.rodando;
       }
     };
+
+    // ------------------------ sliders ------------------------
     document.getElementById("alfaSlider").onchange = function (e) {
+      document.getElementById("alfaValueLabel").textContent = e.target.value;
+      
+      for (const objeto of gObjetos) {
+        objeto.mat.alfa = e.target.value;
+        console.log("Alfa = ", objeto.mat.alfa);
+      }
+
       gCtx.alfaEspecular = e.target.value;
       console.log("Alfa = ", gCtx.alfaEspecular);
       gl.uniform1f(gShader.uAlfaEsp, gCtx.alfaEspecular);
+    };
+    document.getElementById("velocitySlider").onchange = function (e) {
+      gCtx.velRotacion = e.target.value;
+      console.log("Velocidade de Rotacao = ", gCtx.velRotacion);
+      document.getElementById("velocityValueLabel").textContent = e.target.value;
     };
 }
 
@@ -277,26 +252,6 @@ function crieShaders() {
   //  cria o programa
   gShader.program = makeProgram(gl, gVertexShaderSrc, gFragmentShaderSrc);
   gl.useProgram(gShader.program);
-
-  // for (const objeto of gObjetos) {
-  // buffer das normais
-    var bufNormais = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, bufNormais);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(gObjetos[0].nor), gl.STATIC_DRAW);
-
-    var aNormal = gl.getAttribLocation(gShader.program, "aNormal");
-    gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aNormal);
-
-    // buffer dos vértices
-    var bufVertices = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, bufVertices);
-    gl.bufferData(gl.ARRAY_BUFFER, flatten(gObjetos[0].pos), gl.STATIC_DRAW);
-
-    var aPosition = gl.getAttribLocation(gShader.program, "aPosition");
-    gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(aPosition);
-  // }
 
   // resolve os uniforms
   gShader.uModel = gl.getUniformLocation(gShader.program, "uModel");
@@ -322,11 +277,13 @@ function crieShaders() {
   gShader.uCorEsp = gl.getUniformLocation(gShader.program, "uCorEspecular");
   gShader.uAlfaEsp = gl.getUniformLocation(gShader.program, "uAlfaEsp");
 
-  gl.uniform4fv(gShader.uCorAmb, mult(LUZ.amb, MAT.amb));
-  gl.uniform4fv(gShader.uCorDif, mult(LUZ.dif, MAT.dif));
+  // gl.uniform4fv(gShader.uCorAmb, mult(LUZ.amb, MAT.amb));
+  // gl.uniform4fv(gShader.uCorDif, mult(LUZ.dif, MAT.dif));
   gl.uniform4fv(gShader.uCorEsp, LUZ.esp);
-  gl.uniform1f(gShader.uAlfaEsp, MAT.alfa);
+  // gl.uniform1f(gShader.uAlfaEsp, MAT.alfa);
 
+  binderNormVert(gObjetos[0]);
+  
 };
 
 // ==================================================================
@@ -335,6 +292,7 @@ function crieShaders() {
  * Assume que os dados já foram carregados e são estáticos.
  */
 function render() {
+  let mR;
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   for (const objeto of gObjetos) {
@@ -350,24 +308,27 @@ function render() {
         // Cria matriz de rotação para alinhar o cubo com a normal
         var up = vec3(0, 1, 0);
         if (Math.abs(dot(normal, up)) > 0.99) up = vec3(1, 0, 0); // Evita problema quando normal aponta para cima
-        
-        var right = normalize(cross(up, normal));
-        var newUp = normalize(cross(normal, right));
+
+        // var right = normalize(cross(up, normal));
+        // var newUp = normalize(cross(normal, right));
         
         var orientation = mat4(
             right[0], right[1], right[2], 0,
-            normal[0], normal[1], normal[2], 0,
             newUp[0], newUp[1], newUp[2], 0,
+            normal[0], normal[1], normal[2], 0,
             0, 0, 0, 1
         );
         
        // model = mult(model, orientation);
     }
+    else{
+      mR = rotate(0, vec3(0,0,1));
+    }
 
+    
     // Rotação própria do cubo
 
     // Escala e translação
-
       if (1) {
         model = mult(model, rotate(-objeto.theta[EIXO_X_IND], EIXO_X));
         model = mult(model, rotate(-objeto.theta[EIXO_Y_IND], EIXO_Y));
@@ -384,15 +345,34 @@ function render() {
       // escala e translação
       let mT = translate(objeto.trans[0], objeto.trans[1], objeto.trans[2]);
       let mS = scale(objeto.escala[0], objeto.escala[1], objeto.escala[2]);
-      model = mult(mult(model, mT), mS);
-
+      
+      model = mult(model, mT)
+      model = mult(model, mR);
+      model = mult(model, mS);
+      // console.log("Angulo: ", angulo);
+      
 
       let modelView = mult(gCtx.view, model);
       let modelViewInv = inverse(modelView);
       let modelViewInvTrans = transpose(modelViewInv);
 
-      var bufNormais = gl.createBuffer();
+    binderNormVert(objeto)
 
+    // uniformes
+    gl.uniformMatrix4fv(gShader.uModel, false, flatten(model));
+    gl.uniformMatrix4fv(gShader.uInverseTranspose, false, flatten(modelViewInvTrans));
+
+    gl.drawArrays(gl.TRIANGLES, 0, objeto.np);
+    };
+
+  window.requestAnimationFrame(render);
+}
+
+
+function binderNormVert(objeto){
+
+    var bufNormais = gl.createBuffer();
+  // buffer das normais
     gl.bindBuffer(gl.ARRAY_BUFFER, bufNormais);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(objeto.nor), gl.STATIC_DRAW);
 
@@ -409,15 +389,10 @@ function render() {
     gl.vertexAttribPointer(aPosition, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(aPosition);
 
-
-
-      gl.uniformMatrix4fv(gShader.uModel, false, flatten(model));
-      gl.uniformMatrix4fv(gShader.uInverseTranspose, false, flatten(modelViewInvTrans));
-
-      gl.drawArrays(gl.TRIANGLES, 0, objeto.np);
-    };
-
-  window.requestAnimationFrame(render);
+    // iluminação
+    gl.uniform4fv(gShader.uCorAmb, mult(LUZ.amb, objeto.mat.amb));
+    gl.uniform4fv(gShader.uCorDif, mult(LUZ.dif, objeto.mat.dif));
+    gl.uniform1f(gShader.uAlfaEsp, MAT.alfa);
 }
 
 // function render() {
@@ -536,20 +511,28 @@ function getOrientationMatrix(normal) {
 }
 
 
-
 // ========================================================
 // Geração do modelo de uma esferaX de lado unitário
 // ========================================================
-function Esfera(divEsfera = 3, escala = vec3(1,1,1), trans = vec3(0,0,0)) {
+function Esfera(
+  divEsfera = 3,
+  escala = vec3(1,1,1),
+  trans = vec3(0,0,0),
+  // cor = COR_ESFERA,
+  mat = MAT // brilho ou shininess
+) {
   this.np = 6; // número de posições (vértices)
   this.pos = []; // vetor de posições
   this.nor = []; // vetor de normais
 
   this.axis = EIXO_Z_IND; // usado na animação da rotação
   this.theta = vec3(0, 0, 0); // rotação em cada eixo
-  this.rodando = true; // pausa a animação
+  this.rodando = rodando; // pausa a animação
+  
   this.escala = escala;
   this.trans = trans;
+  // this.cor = cor; // cor da esfera
+  this.mat = mat; // brilho ou shininess
   
   this.init = function () {
     const [pos, nor] = crieEsfera(divEsfera);
@@ -681,16 +664,22 @@ const CUBO_CANTOS = [
 * 
 * usa função auxiliar quad(pos, nor, vert, a, b, c, d)
 */
-function Cubo(escala = vec3(1,1,1), trans = vec3(0,0,0)) {
+function Cubo(
+    escala = vec3(1,1,1),
+    trans = vec3(0,0,0),
+    mat = MAT,
+  ) {
   this.np = 36;  // número de posições (vértices)
   this.pos = [];  // vetor de posições
   this.nor = [];  // vetor de normais
 
   this.axis = EIXO_Z_IND;  // usado na animação da rotação
   this.theta = vec3(0, 0, 0);  // rotação em cada eixo
-  this.rodando = true;        // pausa a animação
+  this.rodando = rodando;        // pausa a animação
+  
   this.escala = escala;
   this.trans = trans;
+  this.mat = mat
 
   this.bufVertices = null;
   this.bufNormais = null;
@@ -810,7 +799,34 @@ void main() {
     if (kd > 0.0) {  // parte iluminada
         especular = ks * uCorEspecular;
     }
+
+    // cor de saida
     corSaida = difusao + especular + uCorAmbiente;    
     corSaida.a = 1.0;
 }
 `;
+
+
+
+// ==================================================================
+/* Funções auxiliares 
+*/
+function randomRange(min=0, max=1) {
+  return Math.random() * (max - min) + min;
+}
+
+function sorteie_corRGB() {
+  let r = randomRange(0, 1);
+  let g = randomRange(0, 1);
+  let b = randomRange(0, 1);
+  return `rgb( ${r}, ${g}, ${b} )`;  // retorna uma string
+}
+
+function randomCor() {
+  let r = randomRange(0, 1);
+  let g = randomRange(0, 1);
+  let b = randomRange(0, 1);
+  return vec3(r,g,b);  // retorna uma string
+}
+
+// ===
