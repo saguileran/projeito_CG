@@ -71,7 +71,7 @@ var raio_world = 4.0;
 // var gCubo8 = new Cubo(vec3(1,1,1), vec3(raio_world, 0+6, (4 * Math.sin(theta) * Math.cos(phi))));
 
 // var gCubos = [gCubo, gCubo2, gCubo3, gCubo4, gCubo5, gCubo6, gCubo7, gCubo8];
-var numCubos = 8;
+var numCubos = 10;
 var gCubos = [];
 var aux;
 // for (var i = 0; i < numCubos; i++) {
