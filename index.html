@@ -9,7 +9,9 @@
      <script src="assets/js/config.js"></script>
      <script src="assets/js/shaders.js"></script>
      <script src="assets/js/objects.js"></script>
-     <script src="assets/js/main.js"></script>
+     <!-- <script src="assets/js/main.js"></script> -->
+      <script src="mouse.js"></script>
+      <script src="main_testing.js"></script>
     <link rel="stylesheet" href="assets/css/styles.css">
   </head>
 
@@ -31,6 +33,11 @@
       />
       <span id="velocityValueLabel">0.3</span>
       </div>
+      <div>
+        <label for="alfaLabel">Alfa Especular</label>
+		<input id="alfaSlider" class="styled" type="range" value="10" min="0" max="200" step="10" name="alfaSlider"></input>
+    <span id="alfaValueLabel">50</span>
+      </div>
     </div>
     <p></p>
 	<div>
@@ -39,10 +46,6 @@
 		<button id= "zButton">Rotate Z</button>
 		<button id = "pButton">Pausa/Roda</button>
 	</div>
-	<dif>
-		<label for="alfaLabel">Alfa Especular</label>
-		<input id="alfaSlider" class="styled" type="range" value="10" min="0" max="200" step="10" name="alfaSlider"></input>
-    <span id="alfaValueLabel">50</span>
-	</dif>
+	
   </body>
 </html>

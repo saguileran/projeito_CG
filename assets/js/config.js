@@ -3,7 +3,7 @@
 // ==================================================================
 // Propriedades da fonte de luz
 const LUZ = {
-  pos: vec4(3.0, 10.0, 3.0, 1.0), // posição
+  pos: vec4(30.0, 100.0, 30.0, 1.0), // posição
   amb: vec4(0.2, 0.2, 0.2, 1.0), // ambiente
   dif: vec4(1.0, 1.0, 1.0, 1.0), // difusão
   esp: vec4(1.0, 1.0, 1.0, 1.0), // especular
@@ -26,7 +26,7 @@ const MAT_ESFERA = {
 const FOVY = 100;
 const ASPECT = 1;
 const NEAR = 0.1;
-const FAR = 50;
+const FAR = 500;
 
 // ==================================================================
 // constantes globais
@@ -63,5 +63,5 @@ function randomCor() {
   let r = randomRange(0, 1);
   let g = randomRange(0, 1);
   let b = randomRange(0, 1);
-  return vec3(r,g,b);  // retorna uma string
+  return vec4(r,g,b,1);  // retorna uma string
 }

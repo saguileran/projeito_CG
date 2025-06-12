@@ -13,69 +13,68 @@
  * 
  */
 
+
 "use strict";
+
 
 var gl;        // webgl2
 var gCanvas;   // canvas
 
 // constantes de world
-var raio_world = 4.0;
-var res_esfera = 3;
+// var raio_world = 4.0;
+// var res_esfera = 3;
 
 var numCubos = 10;
 var gCubos = [];
 var aux;
 var cor;
 
-// Creating houses
-for (var i = 0; i < numCubos; i++) {
-  // Calcula ângulos theta e phi para distribuição uniforme
-  var theta = (Math.PI) / 2; // Equador
-  var phi = (2 * Math.PI / numCubos) * i; // Divide o círculo igualmente
-  
-  // Converte para coordenadas cartesianas
-  var x = (raio_world) * Math.sin(theta) * Math.cos(phi);
-  var y = raio_world * Math.sin(theta) * Math.sin(phi);
-  var z = raio_world * Math.cos(theta);
-  
-  cor = randomCor();
-  // Cria um novo material para cada cubo, garantindo cor única
-  let matCubo = {
-    amb: vec4(randomRange(), randomRange(), randomRange(), 1.0),
-    dif: vec4(1.0, 1.0, 1.0, 1.0),
-    alfa: 50.0
-  };
-  console.log(" cor: ", cor);
-  // Cria cubo na posição calculada
-  gCubos.push(new Cubo(vec3(1, 1, 1), vec3(x, y, z+1.5), matCubo));
+// Propriedades do material
+var MAT_FLOOR = {
+  amb: vec4(1.0, 0.0, 0.0, 1.0),
+  dif: vec4(1.0, 1.0, 1.0, 1.0),
+  alfa: 50.0,    // brilho ou shininess
+};
 
-  let matCubo1 = {
-    amb: vec4(randomRange(), randomRange(), randomRange(), 1.0),
-    dif: vec4(1.0, 1.0, 1.0, 1.0),
-    alfa: 50.0
-  };
+let scale_floor = 100;
+var floor = new Floor(
+    vec3(scale_floor, 1, scale_floor),
+    vec3(0,0,0),
+    MAT_FLOOR,
+) 
 
-  gCubos.push(new Cubo(vec3(1, 1, 1), vec3(x, y, z-1.5), matCubo1));
+const MIN_NO_ANDARES = 1;
+const MAX_NO_ANDARES = 5;
+const ALTURA_ANDAR = 2.5;
+const NO_CASA = 5;
+const LARGURA_CASA = 4;
+var gObjetos = [floor];
+
+let altura, largo;
+for(let j=0; j<2; j++){
+  for(let i=0; i<NO_CASA; i++){
+    let mat = {
+      amb: randomCor(),
+      dif: vec4(1.0, 1.0, 1.0, 1.0),
+      alfa: 50.0,    // brilho ou shininess
+    }
+    altura = randomRange(MIN_NO_ANDARES, MAX_NO_ANDARES)
+    largo = 5;
+    let cube = new Cubo(
+      vec3(largo, 2*ALTURA_ANDAR*altura, LARGURA_CASA),
+      vec3(largo*i, ALTURA_ANDAR*altura, (-1)**j*LARGURA_CASA/2),
+      mat,
+    );
+    gObjetos.push(cube)
+
+  }
 }
 
-// var gCubo = new Cubo(vec3(1,1,1), vec3(raio_world,0,2));
-var gEsfera = new Esfera(res_esfera, vec3(raio_world,raio_world,raio_world), vec3(0,0,0), MAT_ESFERA); // world
+// // objetos
 
-// casas
-var gEsferas = [gEsfera];
-var gObjetos = gCubos.concat(gEsferas);
 
-// calcula a matriz de transformação da camera, apenas 1 vez
-// const eye = vec3(3, 3, 3);
-var gCameraHeight = 2;
-const up = vec3(0, 1, 0);
-
-// const eye = vec3(3.61, gCameraHeight, 0); 
-// const at = vec3(0, 7, 0);
-
-const eye = vec3(8, gCameraHeight, 0); 
-const at = vec3(0, 1, 0);
-
+// const at = vec3(0,0,0); // ponto para onde está olhando
+// const eye = vec3(3,3,3);
 
 // guarda coisas do shader
 var gShader = {
@@ -89,6 +88,7 @@ var gCtx = {
   velRotacion: 0.3,   // velocidade de rotação dos objetos
 };
 
+var keys;
 var rodando = false // animação rodando
 
 // ==================================================================
@@ -105,6 +105,21 @@ function main() {
   if (!gl) alert("Vixe! Não achei WebGL 2.0 aqui :-(");
 
   console.log("Canvas: ", gCanvas.width, gCanvas.height);
+
+  // Initialize mouse controls
+  initMouseControls(gCanvas, function() {
+    gCtx.view = getViewMatrix();
+    gl.uniformMatrix4fv(gShader.uView, false, flatten(gCtx.view));
+  });
+
+  // Track keyboard state
+  keys = {};
+  window.addEventListener('keydown', (e) => {
+      keys[e.key.toLowerCase()] = true;
+  });
+  window.addEventListener('keyup', (e) => {
+      keys[e.key.toLowerCase()] = false;
+  });
 
   // interface
   crieInterface();
@@ -221,7 +236,7 @@ function crieShaders() {
 
   // perspective matrix
   gCtx.perspective = perspective(FOVY, ASPECT, NEAR, FAR);
-  gCtx.view = lookAt(eye, at, up);
+  gCtx.view = lookAt(camera.eye, camera.at, camera.up);
 
   gl.uniformMatrix4fv(gShader.uPerspective, false, flatten(gCtx.perspective));
   gl.uniformMatrix4fv(gShader.uView, false, flatten(gCtx.view));
@@ -248,12 +263,59 @@ function crieShaders() {
  * Usa o shader para desenhar.
  * Assume que os dados já foram carregados e são estáticos.
  */
-function render() {
+var lastTime = 0;
+var fixedTimeStep = 1000; // 1 second in milliseconds
+var accumulator = 0;
+
+function render(currentTime) {
+  updateCameraPosition(keys, function() {
+    gCtx.view = getViewMatrix();
+    gl.uniformMatrix4fv(gShader.uView, false, flatten(gCtx.view));
+  });
+
+  // Initialize lastTime if this is the first frame
+  if (!lastTime) {
+      lastTime = currentTime;
+      window.requestAnimationFrame(render);
+      return;
+  }
+
+// Calculate delta time (time since last frame)
+  var deltaTime = currentTime - lastTime;
+  lastTime = currentTime;
+  accumulator += deltaTime;
+
+  // Fixed timestep update (1 second)
+  while (accumulator >= fixedTimeStep) {
+      // Your fixed update logic here
+      updateScene(fixedTimeStep);
+      accumulator -= fixedTimeStep;
+  }
+
+  // Render at display refresh rate
+  renderScene();
+
+  window.requestAnimationFrame(render);
+}
+
+function updateScene(step) {
+    // This runs exactly once per second
+    console.log("Fixed update at 1 second interval");
+    
+    // Put your animation/logic updates here
+    for (const objeto of gObjetos) {
+        if (objeto.rodando) {
+            objeto.theta[objeto.axis] -= gCtx.velRotacion;
+        }
+    }
+}
+
+
+function renderScene(){
   let mR;
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   for (const objeto of gObjetos) {
-
       // modelo muda a cada frame da animação
       if (objeto.rodando) objeto.theta[objeto.axis] -= gCtx.velRotacion;
 
@@ -268,14 +330,12 @@ function render() {
         let angulo = Math.acos(dot(normal, up) / (length(normal) * length(up))) * 180.0 / Math.PI;
         mR = rotate(angulo, vec3(0,0,1));
         // console.log("Angulo: ", angulo, "Angulo rads: ", radians(angulo))
-        
        // model = mult(model, orientation);
     }
     else{
       mR = rotate(0, vec3(0,0,1));
     }
-// gl.uniform1f(gShader.uAlfaEsp, MAT.alfa);
-
+    // gl.uniform1f(gShader.uAlfaEsp, MAT.alfa)
     
     // Rotação própria do cubo
     model = mult(model, rotate(-objeto.theta[EIXO_X_IND], EIXO_X));
@@ -283,30 +343,34 @@ function render() {
     model = mult(model, rotate(-objeto.theta[EIXO_Z_IND], EIXO_Z));
 
     // Escala e translação
-      if (1) {
-        model = mult(model, rotate(-objeto.theta[EIXO_X_IND], EIXO_X));
-        model = mult(model, rotate(-objeto.theta[EIXO_Y_IND], EIXO_Y));
-        model = mult(model, rotate(-objeto.theta[EIXO_Z_IND], EIXO_Z));
-      }
-      else {
-        let rx = rotateX(objeto.theta[EIXO_X_IND]);
-        let ry = rotateY(objeto.theta[EIXO_Y_IND]);
-        let rz = rotateZ(objeto.theta[EIXO_Z_IND]);
-        model = mult(rz, mult(ry, rx));
-      }
+    if (1) {
+      model = mult(model, rotate(-objeto.theta[EIXO_X_IND], EIXO_X));
+      model = mult(model, rotate(-objeto.theta[EIXO_Y_IND], EIXO_Y));
+      model = mult(model, rotate(-objeto.theta[EIXO_Z_IND], EIXO_Z));
+    }
+    else {
+      let rx = rotateX(objeto.theta[EIXO_X_IND]);
+      let ry = rotateY(objeto.theta[EIXO_Y_IND]);
+      let rz = rotateZ(objeto.theta[EIXO_Z_IND]);
+      model = mult(rz, mult(ry, rx));
+    }
 
-      // escala e translação
-      let mT = translate(objeto.trans[0], objeto.trans[1], objeto.trans[2]);
-      let mS = scale(objeto.escala[0], objeto.escala[1], objeto.escala[2]);
-      
-      model = mult(model, mT)
-      model = mult(model, mR);
-      model = mult(model, mS);
-      // console.log("Angulo: ", angulo);
+    // escala e translação
+    let mT = translate(objeto.trans[0], objeto.trans[1], objeto.trans[2]);
+    let mS = scale(objeto.escala[0], objeto.escala[1], objeto.escala[2]);
+    
+    model = mult(model, mT)
+    // model = mult(model, mR);
+    model = mult(model, mS);
+    // console.log("Angulo: ", angulo);
 
-      let modelView = mult(gCtx.view, model);
-      let modelViewInv = inverse(modelView);
-      let modelViewInvTrans = transpose(modelViewInv);
+    // Update view matrix with current camera position
+    gCtx.view = getViewMatrix();
+    gl.uniformMatrix4fv(gShader.uView, false, flatten(gCtx.view));
+
+    let modelView = mult(gCtx.view, model);
+    let modelViewInv = inverse(modelView);
+    let modelViewInvTrans = transpose(modelViewInv);
 
     binderNormVert(objeto)
 
@@ -316,8 +380,6 @@ function render() {
 
     gl.drawArrays(gl.TRIANGLES, 0, objeto.np);
     };
-
-  window.requestAnimationFrame(render);
 }
 
 
@@ -345,3 +407,26 @@ function binderNormVert(objeto){
     gl.uniform4fv(gShader.uCorDif, mult(LUZ.dif, objeto.mat.dif));
     gl.uniform1f(gShader.uAlfaEsp, MAT.alfa);
 }
+
+
+
+
+// // physical model
+// const GRAVITY = 9.8; // m/s^2
+// const MASS = 70; // Kg 
+
+// var lastTime = 0;
+// // var fixedTimeStep = 1000; // 1 second in milliseconds
+// let jump_accumulator = 0;
+// const ML_S = 1000;
+// // const T_JUMP = 10; // seconds
+// function jump(duration = 10*ML_S){ // 2 s in ms
+//   var deltaTime = currentTime - lastTime;
+//   lastTime = currentTime;
+//   jump_accumulator += deltaTime;
+
+//   while (jump_accumulator >= duration) {
+//       camera.eye = -(g/m)*(t-duration/2)**2 + 1.8 // y(t) = -g/m t^2 + y0
+//       jump_accumulator -= duration;
+//   }
+// }

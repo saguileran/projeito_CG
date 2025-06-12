@@ -198,6 +198,7 @@ function quad(pos, nor, vert, a, b, c, d) {
   nor.push(normal);
   pos.push(vert[c]);
   nor.push(normal);
+
   pos.push(vert[a]);
   nor.push(normal);
   pos.push(vert[c]);
@@ -207,6 +208,45 @@ function quad(pos, nor, vert, a, b, c, d) {
 };
 
 
+// floor coordinates
+const FLOOR_CANTOS = [
+  vec4(-0.5, 0, -0.5, 1.0), // Back-Left
+  vec4(-0.5, 0,  0.5, 1.0), // Front-Left
+  vec4( 0.5, 0,  0.5, 1.0), // Front-Right
+  vec4( 0.5, 0, -0.5, 1.0), // Back-Right
+];
 
 
+var MARGIN = 3;
 
+function Floor(
+    escala = vec3(1,1,1),
+    trans = vec3(0,0,0),
+    mat = MAT,
+){
+  this.np = 6;
+  this.pos = [];  // vetor de posições
+  this.nor = [];  // vetor de normais
+
+  this.escala = escala;
+  this.trans = trans;
+  this.mat = mat
+
+  this.axis = EIXO_Y_IND;  // usado na animação da rotação
+  this.theta = vec3(0, 0, 0);  // rotação em cada eixo
+  this.rodando = false;        // pausa a animação
+  
+  this.init = function () {    // carrega os buffers
+    quad(this.pos, this.nor, FLOOR_CANTOS, 0, 1, 2, 3);
+    }
+
+}
+
+
+function Block(center, w, h){
+  this.margin = MARGIN;
+  this [xc, yc] = center;
+  this.w = w;
+  this.h= h;
+
+}
