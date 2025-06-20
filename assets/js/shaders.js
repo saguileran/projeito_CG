@@ -7,6 +7,7 @@ var gVertexShaderSrc = `#version 300 es
 
 in vec4 aPosition;
 in vec3 aNormal;
+in vec2 aTexCoord;
 
 uniform mat4 uModel;
 uniform mat4 uView;
@@ -18,6 +19,7 @@ uniform vec4 uLuzPos;
 out vec3 vNormal;
 out vec3 vLight;
 out vec3 vView;
+out vec2 vTexCoord;
 
 void main() {
     mat4 modelView = uView * uModel;
@@ -29,6 +31,11 @@ void main() {
 
     vLight = (uView * uLuzPos - pos).xyz;
     vView = -(pos.xyz);
+
+    // Experimento: correção perspectiva manual. 
+    // Remova o comentário da linha abaixo para ver o que acontece.
+    // gl_Position /= gl_Position.w;
+    vTexCoord = aTexCoord; 
 }
 `;
 
@@ -39,6 +46,8 @@ precision highp float;
 in vec3 vNormal;
 in vec3 vLight;
 in vec3 vView;
+in vec2 vTexCoord;
+
 out vec4 corSaida;
 
 // cor = produto luz * material
@@ -46,6 +55,8 @@ uniform vec4 uCorAmbiente;
 uniform vec4 uCorDifusao;
 uniform vec4 uCorEspecular;
 uniform float uAlfaEsp;
+uniform sampler2D uTextureMap;
+
 
 void main() {
     vec3 normalV = normalize(vNormal);
@@ -68,5 +79,8 @@ void main() {
     // cor de saida
     corSaida = difusao + especular + uCorAmbiente;    
     corSaida.a = 1.0;
+    
+    corSaida = texture(uTextureMap, vTexCoord) * corSaida;
+    
 }
 `;

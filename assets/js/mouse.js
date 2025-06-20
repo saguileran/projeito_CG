@@ -1,23 +1,28 @@
 // mouse.js - First-person camera that activates on click
 
+let PLAYER_HEIGHT = 1.8; // Normal standing height (m)
 // Camera state
 var camera = {
-    eye: vec3(0, 1.8, 5),       // Initial position
-    at: vec3(0, 1.8, 0),        // Looking at origin
+    eye: vec3(0, PLAYER_HEIGHT, -10),     // Initial position
+    at: vec3(0, PLAYER_HEIGHT, 0),        // Looking at origin
     up: vec3(0, 1, 0),          // World up
     sensitivity: 0.002,
     movementSpeed: 0.02,
     pitch: 0,
-    yaw: Math.PI,               // Facing -Z initially
+    yaw: 0,               // Facing Z initially
     active: false,              // Becomes true after first click
 
     // Physics properties
-    velocityY: 0,               // Vertical velocity
+    velocidad: vec3(0, 0, 0),
     isJumping: false,
-    gravity: -0.005,            // Gravity strength
-    jumpForce: 0.15,            // Initial jump velocity
-    groundHeight: 1.8,           // Normal standing height
+    gravity: -0.002,            // Gravity strength (meters per frame squared)
+    jumpForce: 0.05,            // Initial jump velocity (meters per frame)
+    groundHeight: PLAYER_HEIGHT,           // Normal standing height
 };
+
+let direction = normalize(subtract(camera.at, camera.eye));
+camera.pitch = 2*Math.PI*Math.asin(direction[1])/180;
+camera.yaw = 2*Math.PI*Math.atan2(direction[2], direction[0])/180;
 
 // Mouse state
 var mouse = {
@@ -86,6 +91,7 @@ function initMouseControls(canvas, updateViewCallback) {
 /**
  * Updates the camera's look-at point
  */
+let tolerance = 0.2;
 function updateLookDirection() {
     const dir = vec3(
         Math.sin(camera.yaw) * Math.cos(camera.pitch),
@@ -108,20 +114,25 @@ function updateLookDirection() {
 function updateCameraPosition(keys, updateViewCallback) {
     if (!camera.active) return;
 
+    // Save old position
+    const oldEye = vec3(...camera.eye);
+
     // Jumping
     if (keys[' '] && !camera.isJumping) {  // Spacebar to jump
-        camera.velocityY = camera.jumpForce;
+        camera.velocidad = vec3(0, camera.jumpForce, 0);
         camera.isJumping = true;
     }
 
     // Apply gravity
-    camera.velocityY += camera.gravity;
-    camera.eye[1] += camera.velocityY;
+    
+    camera.velocidad =  add(camera.velocidad, vec3(0, camera.gravity, 0))
+    camera.eye[1] += camera.velocidad[1];
     
     // Check if landed
     if (camera.eye[1] <= camera.groundHeight) {
         camera.eye[1] = camera.groundHeight;
-        camera.velocityY = 0;
+        // camera.velocityY = 0;
+        camera.velocidad[1] = 0;
         camera.isJumping = false;
     }
     
@@ -151,7 +162,40 @@ function updateCameraPosition(keys, updateViewCallback) {
         const moveAmount = mult(camera.movementSpeed, moveDir);
         camera.eye = add(camera.eye, moveAmount);
     }
+
+    // --- Collision detection with houses ---
+    for (const house of gObjetos) {
+            if (house instanceof Cubo) {
+                if (
+                    camera.eye[0] + tolerance >= house.range.x[0] && camera.eye[0] - tolerance <= house.range.x[1] &&
+                    camera.eye[1] + tolerance >= house.range.y[0] && camera.eye[1] - tolerance <= house.range.y[1] &&
+                    camera.eye[2] + tolerance >= house.range.z[0] && camera.eye[2] - tolerance <= house.range.z[1]
+                ) {
+                    // Collision detected, revert only X and Z, keep Y (gravity)
+                    camera.eye[0] = oldEye[0];
+                    camera.eye[2] = oldEye[2];
+                    break;
+                }
+            }
+        }
+
     
+    let foundCube = false;
+    for (const house of window.gObjetos) {
+        if (house instanceof Cubo) {
+            if (
+                camera.eye[0] >= house.range.x[0] && camera.eye[0] <= house.range.x[1] &&
+                camera.eye[2] >= house.range.z[0] && camera.eye[2] <= house.range.z[1]
+            ) {
+                // Set groundHeight to top of this cube
+                camera.groundHeight = house.range.y[1] + 1.2*tolerance;
+                foundCube = true;
+                break;
+            }
+        }
+    }
+    if (!foundCube) camera.groundHeight = PLAYER_HEIGHT;
+
     // Update look-at point to maintain proper height relationship
     updateLookDirection();
     updateViewCallback();

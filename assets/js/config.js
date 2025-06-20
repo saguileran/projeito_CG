@@ -65,3 +65,15 @@ function randomCor() {
   let b = randomRange(0, 1);
   return vec4(r,g,b,1);  // retorna uma string
 }
+
+function RandomMat(random_amb = false) {
+  let amb;
+  if (random_amb) amb = randomCor();
+  else amb = vec4(1.0, 1.0, 1.0, 1.0)
+  
+  return {
+    amb: amb,
+    dif: vec4(1.0, 1.0, 1.0, 1.0),
+    alfa: randomRange(10, 500), // shininess
+  };
+}

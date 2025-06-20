@@ -19,11 +19,20 @@ function Esfera(
   this.escala = escala;
   this.trans = trans;
   this.mat = mat; // brilho ou shininess
+
+  this.textureURL = null; // textura 
+
+  // range where t
+  this.range = {
+    x: [trans[0] - 0.5 * escala[0], trans[0] + 0.5 * escala[0]],
+    y: [trans[1] - 0.5 * escala[1], trans[1] + 0.5 * escala[1]],
+    z: [trans[2] - 0.5 * escala[2], trans[2] + 0.5 * escala[2]],
+  };
   
   this.init = function () {
     const [pos, nor] = crieEsfera(divEsfera);
 
-    console.log(pos, nor);
+    // console.log(pos, nor);
 
     this.pos = pos;
     this.nor = nor;
@@ -143,6 +152,13 @@ const CUBO_CANTOS = [
   vec4(0.5, -0.5, -0.5, 1.0)   // 7
 ];
 
+var vTextura = [      // valores escolhidos para recortar a parte desejada
+  vec2(0.05, 0.05),
+  vec2(0.05, 0.75),
+  vec2(0.95, 0.75),
+  vec2(0.95, 0.05)
+];
+
 /**  ................................................................
 * Objeto Cubo de lado 1 centrado na origem.
 * 
@@ -152,26 +168,40 @@ function Cubo(
     escala = vec3(1,1,1),
     trans = vec3(0,0,0),
     mat = MAT,
+    velocidade = vec3(0,0,0), // velocidade de rotação
   ) {
   this.np = 36;  // número de posições (vértices)
   this.pos = [];  // vetor de posições
   this.nor = [];  // vetor de normais
+  this.tex = [];  // vetor de texturas
+  this.id = 'None'
 
   this.axis = EIXO_Z_IND;  // usado na animação da rotação
   this.theta = vec3(0, 0, 0);  // rotação em cada eixo
   this.rodando = rodando;        // pausa a animação
   
+  this.velocidade = velocidade; // velocidade de rotação
   this.escala = escala;
   this.trans = trans;
   this.mat = mat
 
+  this.textureURL = null; // textura 
+
+  // range where the object is located
+  this.range = {
+    x: [trans[0] - 0.5*escala[0], trans[0] + 0.5*escala[0]],
+    y: [trans[1] - 0.5*escala[1], trans[1] + 0.5*escala[1]],
+    z: [trans[2] - 0.5*escala[2], trans[2] + 0.5*escala[2]],
+  };
+  
+
   this.init = function () {    // carrega os buffers
-    quad(this.pos, this.nor, CUBO_CANTOS, 1, 0, 3, 2);
-    quad(this.pos, this.nor, CUBO_CANTOS, 2, 3, 7, 6);
-    quad(this.pos, this.nor, CUBO_CANTOS, 3, 0, 4, 7);
-    quad(this.pos, this.nor, CUBO_CANTOS, 6, 5, 1, 2);
-    quad(this.pos, this.nor, CUBO_CANTOS, 4, 5, 6, 7);
-    quad(this.pos, this.nor, CUBO_CANTOS, 5, 4, 0, 1);
+    quad(this.tex, this.pos, this.nor, CUBO_CANTOS, 1, 0, 3, 2);
+    quad(this.tex, this.pos, this.nor, CUBO_CANTOS, 2, 3, 7, 6);
+    quad(this.tex, this.pos, this.nor, CUBO_CANTOS, 3, 0, 4, 7);
+    quad(this.tex, this.pos, this.nor, CUBO_CANTOS, 6, 5, 1, 2);
+    quad(this.tex, this.pos, this.nor, CUBO_CANTOS, 4, 5, 6, 7);
+    quad(this.tex, this.pos, this.nor, CUBO_CANTOS, 5, 4, 0, 1);
   };
 };
 
@@ -186,25 +216,32 @@ function Cubo(
 * @param {*} c : 
 * @param {*} d :
 */
-function quad(pos, nor, vert, a, b, c, d) {
+function quad(tex, pos, nor, vert, a, b, c, d) {
   var t1 = subtract(vert[b], vert[a]);
   var t2 = subtract(vert[c], vert[b]);
   var normal = cross(t1, t2);
   normal = vec3(normal);
 
-  pos.push(vert[a]);
-  nor.push(normal);
-  pos.push(vert[b]);
-  nor.push(normal);
-  pos.push(vert[c]);
-  nor.push(normal);
 
   pos.push(vert[a]);
   nor.push(normal);
+  tex.push(vTextura[0]);
+  pos.push(vert[b]);
+  nor.push(normal);
+  tex.push(vTextura[1]);
   pos.push(vert[c]);
   nor.push(normal);
+  tex.push(vTextura[2]);
+
+  pos.push(vert[a]);
+  nor.push(normal);
+  tex.push(vTextura[0]);
+  pos.push(vert[c]);
+  nor.push(normal);
+  tex.push(vTextura[2]);
   pos.push(vert[d]);
   nor.push(normal);
+  tex.push(vTextura[3]);
 };
 
 
@@ -223,10 +260,12 @@ function Floor(
     escala = vec3(1,1,1),
     trans = vec3(0,0,0),
     mat = MAT,
+    
 ){
   this.np = 6;
   this.pos = [];  // vetor de posições
   this.nor = [];  // vetor de normais
+  this.tex = [];  // vetor de texturas
 
   this.escala = escala;
   this.trans = trans;
@@ -237,16 +276,8 @@ function Floor(
   this.rodando = false;        // pausa a animação
   
   this.init = function () {    // carrega os buffers
-    quad(this.pos, this.nor, FLOOR_CANTOS, 0, 1, 2, 3);
+    quad(this.tex, this.pos, this.nor, FLOOR_CANTOS, 0, 1, 2, 3);
     }
 
 }
 
-
-function Block(center, w, h){
-  this.margin = MARGIN;
-  this [xc, yc] = center;
-  this.w = w;
-  this.h= h;
-
-}
