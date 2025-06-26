@@ -1,10 +1,8 @@
-
-
 // ==================================================================
 // Propriedades da fonte de luz
 const LUZ = {
-  pos: vec4(30.0, 100.0, 30.0, 1.0), // posição
-  amb: vec4(0.2, 0.2, 0.2, 1.0), // ambiente
+  pos: vec4(50.0, 100.0, 50.0, 1.0), // posição
+  amb: vec4(0.5, 0.5, 0.5, 1.0), // ambiente
   dif: vec4(1.0, 1.0, 1.0, 1.0), // difusão
   esp: vec4(1.0, 1.0, 1.0, 1.0), // especular
 };
@@ -44,6 +42,87 @@ const COR_ESFERA = vec4(0.1, 0, 0, 1.0); // cor da esfera
 // variáveis globais
 // as strings com os código dos shaders também são globais, estão 
 // no final do arquivo.
+
+// ==================================================================
+/* Robot
+*/
+
+const MAT_ROBOT = {
+  amb: vec4(0.1, 0.1, 0.1, 1.0),
+  dif: vec4(0.8, 0.8, 0.8, 1.0),
+  spec: vec4(0.9, 0.9, 0.9, 1.0),
+  alfa: 50.0,    // brilho ou shininess
+}
+const ROBOT_HEIGHT = 1.8; // height of the robot body
+const ROBOT_HEIGHT_HEAD = (1.5/8)*ROBOT_HEIGHT; // height of the robot head
+const ROBOT_HEIGHT_CORPO = (3.5/8)*ROBOT_HEIGHT; // height of the robot head
+const ROBOT_HEIGHT_LEGS = (3/8)*ROBOT_HEIGHT; // height of the robot head
+const CORPO_RADIUS = 0.5; // radius of the body
+
+const HEAD_RADIUS = 0.25; // radius of the head
+
+const LEG_RADIUS = 0.15; // radius of the legs
+const LEG_SEPARATION = 0.12; // separation between the legs
+
+
+const ARMS_SEPARATION = 0.25; // separation between the arms
+const ARMS_LENGTH = 0.5; // length of the arms
+const ARMS_RADIUS = 0.15; // radius of the arms
+const ARMS_HEIGHT = 0.5; // height of the arms
+
+const ANTENA_RADIUS = 0.05; // radius of the antenna
+const ANTENA_HEIGHT = 0.2; // height of the antenna
+
+// ==================================================================
+/* Houses
+*/
+// Parameters for the grid of house blocks
+const GRID_ROWS = 4;
+const GRID_COLS = 4;
+const BLOCK_WIDTH = 15;   // Width of each block region (meters)
+const BLOCK_LENGTH = 20;  // Length of each block region (meters)
+const STREET_WIDTH = 20;   // Distance between blocks (meters)
+const TOTAL_BLOCK_WIDTH = GRID_COLS*BLOCK_WIDTH + (GRID_COLS-1)*STREET_WIDTH; 
+const TOTAL_BLOCK_LENGTH = GRID_ROWS*BLOCK_LENGTH + (GRID_ROWS-1)*STREET_WIDTH; // 
+
+const MIN_NO_ANDARES = 1;
+const MAX_NO_ANDARES = 5;
+const ALTURA_ANDAR = 2.5; // meters
+const LARGURA_CASA = 6;   // width of a house (meters)
+const LARGO_CASA = 8;     // length of a house (meters)
+const NO_CASAS_LINEAS = 4; // houses per row in a block
+
+// ==================================================================
+/* Floor
+*/
+let scale_floor = 1000;
+var MAT_FLOOR = {
+  amb: vec4(0.1, 0.1, 0.1, 1.0),
+  dif: vec4(1.0, 1.0, 1.0, 1.0),
+  alfa: 50.0,    // brilho ou shininess
+};
+
+// ==================================================================
+/* sun
+*/
+const sizeSun = 10;
+
+
+// ==================================================================
+/* Cars
+*/
+const NO_CARROS = 10; // number of cars
+// const CAR_HEIGHT = 2; // height of the car
+// const CAR_WIDTH = 3; // width of the car
+// const CAR_DEPTH = 5; // depth of the car
+// const STREET_Y = CAR_HEIGHT; // y position for all cars
+const STREET_MARGIN = 1; // margin from the edge of the street
+const CAR_SPACING = 20; // minimum space between cars
+const CAR_SPEED = 0.5; // minimum/maximum car velocity
+// Dynamically generate street positions between blocks
+let streetPositions = [];
+// Vertical streets (along Z, between columns)
+
 
 // ==================================================================
 /* Funções auxiliares 

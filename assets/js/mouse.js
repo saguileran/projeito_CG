@@ -1,13 +1,14 @@
 // mouse.js - First-person camera that activates on click
 
-let PLAYER_HEIGHT = 1.8; // Normal standing height (m)
+const PLAYER_HEIGHT = 1.8; // Normal standing height (m)
+var SPEED_INITIAL = 0.02; // Initial movement speed (m/frame)
 // Camera state
 var camera = {
-    eye: vec3(0, PLAYER_HEIGHT, -10),     // Initial position
-    at: vec3(0, PLAYER_HEIGHT, 0),        // Looking at origin
+    eye: vec3(0, PLAYER_HEIGHT, HEAD_RADIUS/2),     // Initial position
+    at: vec3(0, PLAYER_HEIGHT, 2),        // Looking at origin
     up: vec3(0, 1, 0),          // World up
-    sensitivity: 0.002,
-    movementSpeed: 0.02,
+    sensitivity: 0.005,
+    movementSpeed: SPEED_INITIAL,
     pitch: 0,
     yaw: 0,               // Facing Z initially
     active: false,              // Becomes true after first click
@@ -104,6 +105,8 @@ function updateLookDirection() {
         camera.eye[1] + dir[1],  // Maintain same vertical offset
         camera.eye[2] + dir[2]
     );
+
+    
 }
 
 /**
@@ -154,47 +157,91 @@ function updateCameraPosition(keys, updateViewCallback) {
     if (keys['a']) moveDir = subtract(moveDir, right);
     if (keys['d']) moveDir = add(moveDir, right);
     
-    if (keys['shift']) camera.movementSpeed = 0.02*5;
-    else camera.movementSpeed = 0.02;
+    if (keys['shift']) camera.movementSpeed = SPEED_INITIAL*5;
+    else camera.movementSpeed = SPEED_INITIAL;
 
     if (length(moveDir) > 0) {
         normalize(moveDir, moveDir);
-        const moveAmount = mult(camera.movementSpeed, moveDir);
+        let moveAmount = mult(camera.movementSpeed, moveDir);
         camera.eye = add(camera.eye, moveAmount);
+        
+        // update robot position
+        for(const part of ROBOT){
+            part.trans = add(part.trans, moveAmount);
+        }
     }
-
+        
     // --- Collision detection with houses ---
+    let collidedWithCar = false;
     for (const house of gObjetos) {
-            if (house instanceof Cubo) {
-                if (
-                    camera.eye[0] + tolerance >= house.range.x[0] && camera.eye[0] - tolerance <= house.range.x[1] &&
-                    camera.eye[1] + tolerance >= house.range.y[0] && camera.eye[1] - tolerance <= house.range.y[1] &&
-                    camera.eye[2] + tolerance >= house.range.z[0] && camera.eye[2] - tolerance <= house.range.z[1]
-                ) {
-                    // Collision detected, revert only X and Z, keep Y (gravity)
+        if (house instanceof Cubo) {
+            if (
+                camera.eye[0] + tolerance >= house.range.x[0] && camera.eye[0] - tolerance <= house.range.x[1] &&
+                camera.eye[1] + tolerance >= house.range.y[0] && camera.eye[1] - tolerance <= house.range.y[1] &&
+                camera.eye[2] + tolerance >= house.range.z[0] && camera.eye[2] - tolerance <= house.range.z[1]
+            ) {
+                if (house.id === 'carro') {
+                    // Elastic collision with car: reflect horizontal velocity
+                    let dx0 = Math.abs(camera.eye[0] - house.range.x[0]);
+                    let dx1 = Math.abs(camera.eye[0] - house.range.x[1]);
+                    let dy0 = Math.abs(camera.eye[1] - house.range.y[0]);
+                    let dy1 = Math.abs(camera.eye[1] - house.range.y[1]);
+                    let dz0 = Math.abs(camera.eye[2] - house.range.z[0]);
+                    let dz1 = Math.abs(camera.eye[2] - house.range.z[1]);
+                    let minPen = Math.min(dx0, dx1, dy0, dy1, dz0, dz1);
+                    let normal = vec3(0,0,0);
+                    if (minPen === dx0) normal = vec3(-1,0,0);
+                    else if (minPen === dx1) normal = vec3(1,0,0);
+                    else if (minPen === dy0) normal = vec3(0,-1,0);
+                    else if (minPen === dy1) normal = vec3(0,1,0);
+                    else if (minPen === dz0) normal = vec3(0,0,-1);
+                    else if (minPen === dz1) normal = vec3(0,0,1);
+                    // v' = v - 2*(v·n)*n
+                    let vDotN = dot(camera.velocidad, normal);
+                    camera.velocidad = subtract(camera.velocidad, scale(2*vDotN, normal));
+                    // Move camera slightly away from car
+                    camera.eye = add(camera.eye, scale(tolerance, normal));
+
+                    for(const part of ROBOT){
+                        part.trans = add(part.trans, scale(tolerance, normal));
+                    }
+
+                    collidedWithCar = true;
+                    break;
+                } else {
+                    // Collision detected with house, revert only X and Z, keep Y (gravity)
                     camera.eye[0] = oldEye[0];
                     camera.eye[2] = oldEye[2];
+                    
+                    // for(const part of ROBOT){
+                    //     part.trans = add(part.trans, vec3(camera.eye[0], 0, camera.eye[2]));
+                    // }
+                    break;
+                    
+                }
+            }
+        }
+    }
+    // --- End collision detection ---
+
+    // Only update groundHeight if not on top of car
+    if (!collidedWithCar) {
+        let foundCube = false;
+        for (const house of window.gObjetos) {
+            if (house instanceof Cubo) {
+                if (
+                    camera.eye[0] >= house.range.x[0] && camera.eye[0] <= house.range.x[1] &&
+                    camera.eye[2] >= house.range.z[0] && camera.eye[2] <= house.range.z[1]
+                ) {
+                    // Set groundHeight to top of this cube
+                    camera.groundHeight = house.range.y[1] + 1.2*tolerance;
+                    foundCube = true;
                     break;
                 }
             }
         }
-
-    
-    let foundCube = false;
-    for (const house of window.gObjetos) {
-        if (house instanceof Cubo) {
-            if (
-                camera.eye[0] >= house.range.x[0] && camera.eye[0] <= house.range.x[1] &&
-                camera.eye[2] >= house.range.z[0] && camera.eye[2] <= house.range.z[1]
-            ) {
-                // Set groundHeight to top of this cube
-                camera.groundHeight = house.range.y[1] + 1.2*tolerance;
-                foundCube = true;
-                break;
-            }
-        }
+        if (!foundCube) camera.groundHeight = PLAYER_HEIGHT;
     }
-    if (!foundCube) camera.groundHeight = PLAYER_HEIGHT;
 
     // Update look-at point to maintain proper height relationship
     updateLookDirection();
