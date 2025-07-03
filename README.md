@@ -21,7 +21,7 @@ You interact with the game using standard first-person controls: move with the k
     Your browser does not support the video tag.
   </video>
   <br>
-  <em>Figure: Example gameplay video of Robot Survive.</em>
+  <em>Figure: Example gameplay video of [Robot Survive](https://drive.google.com/file/d/100_R5cQwfkmCUosf7cXdM9Q7B2U2G9i-/view?usp=drive_link).</em>
 </p>
 
 ## Features
